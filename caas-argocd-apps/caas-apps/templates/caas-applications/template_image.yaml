@@ -1,8 +1,11 @@
 adherent1:
   caas-webobject:
-     mangue: 
+     mangue:
         image: totoooooooooooooooooooo
         tag: 1.02
+     mangue2:
+       image: boroto
+       tag: 2.0
   caas-springboot:
      grh-envoi-paye:
        image: tutu

@@ -11,7 +11,7 @@ spec:
             type: caas-webobject
             customValues: |
               image:
-                repository: docker.depot.asso-cocktail.org/cocktail/application/mangue
+                repository: totoooooooooooooooooooo
               appName: "Mangue"
               cgiAdaptorUrl: "https://mangue.ckaas.asso-cocktail.com"
 
@@ -116,7 +116,7 @@ spec:
             type: caas-springboot
             customValues: |
               image:
-                repository: docker.depot.asso-cocktail.org/cocktail/application/grh-envoi-paye
+                repository: tutu
               appName: "grh-envoi-paye"
 
               extraEnv:

@@ -10,8 +10,7 @@ spec:
           - name: mangue
             type: caas-webobject
             customValues: |
-              image:
-                repository: docker.depot.asso-cocktail.org/cocktail/application/mangue
+              image:repository: docker.depot.asso-cocktail.org/cocktail/application/mangue
               appName: "Mangue"
               cgiAdaptorUrl: "https://mangue.ckaas.asso-cocktail.com"
 

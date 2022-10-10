@@ -51,8 +51,8 @@ with open ('caas-apps-adherent1.yaml', "r") as f:
         print (exc)
 
 # Write
-with open ('caas-apps-adherent1.yaml', "w") as f:
-    f.write(yaml.dump(file_one))
+with open ('caas-apps-adherent11.yaml', "w") as f:
+    f.writelines(yaml.dump(file_one))
 
 
 #ton code pourri >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
