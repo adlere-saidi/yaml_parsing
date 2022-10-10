@@ -1,0 +1,102 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: caas-app-gfc-services
+  namespace: argocd
+  labels:
+    caas.app.type: SpringBoot
+    caas.app.name: gfc-services
+spec:
+  project: caas-applications
+  source:
+    repoURL: 'git@forge.in.asso-cocktail.org:dsiadm/caas/caas-helm-charts.git'
+    path: charts/caas-springboot
+    targetRevision: HEAD
+    helm:
+      valueFiles:
+        - values.yaml
+      values: |
+        image:
+          repository: docker.depot.asso-cocktail.org/cocktail/application/gfc-services
+          tag: "2022.1.13"
+
+        appName: "gfc-services"
+
+        extraEnv:
+          - name: "PROFILE"
+            value: k8s
+          - name: "spring.config.additional-location"
+            value: "/config/"
+          - name: "spring.jmx.enabled"
+            value: "false"
+          - name: "logging.config"
+            value: "/config/logback-k8s.xml"
+
+        resources:
+          limits:
+            memory: 1Gi
+          requests:
+            memory: 256Mi
+
+        oracle:
+          host: bdorsref1.sb.asso-cocktail.org
+          port: 5221
+          user: grhum
+          password: caasRHUM
+          database: CAASUTF01
+
+        ingress:
+          enabled: true
+          allowHttp: true
+          className: "nginx"
+          annotations:
+            cert-manager.io/cluster-issuer: letsencrypt-prod
+            kubernetes.io/tls-acme: "true"
+          hosts:
+            - host: gfc-services.ckaas.asso-cocktail.com
+              paths:
+                - path: /
+                  pathType: ImplementationSpecific
+          tls:
+            - secretName: gfc-services.ckaas.asso-cocktail.com-tls
+              hosts:
+                - gfc-services.ckaas.asso-cocktail.com
+
+        configFilesTree:
+          - directory: "/config"
+            configFiles:
+              application-k8s.yaml: |
+                spring.main.banner-mode: OFF
+                management.endpoints.web.exposure.include: "*"
+                org.cocktail.gfc.services:
+                  base.url: "http://localhost:8080"
+                  versiondatabase.enabled: false
+                logging:
+                  pattern:
+                    console: "%d{dd-MM-yyyy HH:mm:ss} %-5level [%-45.-45logger{45}] - %msg%n"
+                  level:
+                    org.hibernate.SQL: error
+                    org.cocktail: info
+
+              logback-k8s.xml: |
+                <configuration debug="true">
+                    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+                        <encoder>
+                            <pattern>%d{dd-MM-yyyy HH:mm:ss} %-5level [%-45.-45logger{45}] - %msg%n</pattern>
+                        </encoder>
+                    </appender>
+                    <!-- LOG everything at INFO level -->
+                    <root level="info">
+                            <appender-ref ref="STDOUT" />
+                    </root>
+                </configuration>
+  destination:
+    namespace: test-gfc-services
+    name: Dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true

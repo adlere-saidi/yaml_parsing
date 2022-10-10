@@ -1,0 +1,329 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: caas-apps-adherent2
+  namespace: argocd
+spec:
+  generators:
+  - list:
+      elements:
+      - name: gfc-services
+        type: caas-springboot
+        customValues: |
+          image:
+            repository: docker.depot.asso-cocktail.org/cocktail/application/gfc-services
+            tag: 2022.3.11
+          appName: gfc-services
+          extraEnv:
+          - name: PROFILE
+            value: k8s
+          - name: spring.config.additional-location
+            value: /config/
+          - name: spring.jmx.enabled
+            value: 'false'
+          - name: logging.config
+            value: /config/logback-k8s.xml
+          resources:
+            limits:
+              memory: 1Gi
+            requests:
+              memory: 256Mi
+          ingress:
+            enabled: true
+            allowHttp: true
+            className: nginx
+            annotations:
+              cert-manager.io/cluster-issuer: letsencrypt-prod
+              kubernetes.io/tls-acme: 'true'
+            hosts:
+            - paths:
+              - path: /
+                pathType: ImplementationSpecific
+            tls:
+            - secretName: adherent2-gfc-services.tls
+          configFilesTree:
+          - directory: /config
+            configFiles:
+              application-k8s.yaml: |
+                spring.main.banner-mode: OFF
+                management.endpoints.web.exposure.include: "*"
+                org.cocktail.gfc.services:
+                  base.url: "http://localhost:8080"
+                  versiondatabase.enabled: false
+                logging:
+                  pattern:
+                    console: "%d{dd-MM-yyyy HH:mm:ss} %-5level [%-45.-45logger{45}] - %msg%n"
+                  level:
+                    org.hibernate.SQL: error
+                    org.cocktail: info
+              logback-k8s.xml: |
+                <configuration debug="true">
+                    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+                        <encoder>
+                            <pattern>%d{dd-MM-yyyy HH:mm:ss} %-5level [%-45.-45logger{45}] - %msg%n</pattern>
+                        </encoder>
+                    </appender>
+                    <!-- LOG everything at INFO level -->
+                    <root level="info">
+                            <appender-ref ref="STDOUT" />
+                    </root>
+                </configuration>
+      - name: gfc-recettes
+        type: caas-webobject
+        customValues: |
+          image:
+            repository: docker.depot.asso-cocktail.org/cocktail/application/gfc-recettes
+            tag: "2022.1.latest"
+
+          appName: "gfc-Recettes"
+          cgiAdaptorUrl: "https://gfc-recettes.ckaas.asso-cocktail.org"
+
+          resources:
+            limits:
+              memory: "1Gi"
+            requests:
+              memory: 784Mi
+
+          service:
+            type: NodePort
+
+          ingress:
+            enabled: true
+            allowHttp: true
+            className: "nginx"
+            annotations:
+              cert-manager.io/cluster-issuer: letsencrypt-prod
+              kubernetes.io/tls-acme: "true"
+              nginx.ingress.kubernetes.io/enable-cors: "true"
+              nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+
+            hosts:
+              - paths:
+                  - path: /
+                    pathType: ImplementationSpecific
+            tls:
+              - secretName: gfc-recettes.ckaas.asso-cocktail.com-tls
+
+          configFilesTree:
+            - directory: "/config"
+              configFiles:
+                application-k8s.properties: |
+                  APP_USE_CAS=NO
+                  APP_ADMIN_MAIL=test@asso-cocktail.com
+                  org.cocktail.gfc-recettes.adminMail=test@asso-cocktail.com
+                  cocktail.feature.background.tasks=true
+                  oracle.jdbc.timezoneAsRegion=false
+                  DEFAULT_SESSION_TIME_OUT=10000
+                  # Identifiant SAUT de l'application
+                  # gfc-recettes base de production
+                  APP_ID=gfc-recettes
+                  # SAUT_ID_TRANSLATION=ULOGIN:GRHUM,GRHUM:GRHUM,gfc-recettes:GRHUM
+                  # Libelle long de l'identifiant de l'application
+                  APP_ALIAS=gfc-recettesdans gfc-recettes / Contents / Resources / gfc-recettes
+                  # Vous pouvez ne mettre dans ce repertoire que les éditions modifiees.
+                  hibernate.dialect=org.hibernate.dialect.Oracle12cDialect
+                  org.cocktail.fwkcktlwebapp.versiondatabase.enabled=false
+                  cocktail.feature.perimetre=false
+      - name: gfc-compta
+        type: caas-webobject
+        customValues: |
+          image:
+            repository: docker.depot.asso-cocktail.org/cocktail/application/gfc-compta
+            tag: "2022.2.13.1"
+
+          appName: "gfc-Compta"
+          cgiAdaptorUrl: "https://gfc-compta.ckaas.asso-cocktail.org"
+
+          resources:
+            limits:
+              memory: "1Gi"
+            requests:
+              memory: 784Mi
+
+          service:
+            type: NodePort
+
+          ingress:
+            enabled: true
+            allowHttp: true
+            className: "nginx"
+            annotations:
+              cert-manager.io/cluster-issuer: letsencrypt-prod
+              kubernetes.io/tls-acme: "true"
+              nginx.ingress.kubernetes.io/enable-cors: "true"
+              nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+
+            hosts:
+              - paths:
+                  - path: /
+                    pathType: ImplementationSpecific
+            tls:
+              - secretName: gfc-compta.ckaas.asso-cocktail.com-tls
+
+          configFilesTree:
+            - directory: "/config"
+              configFiles:
+                application-k8s.properties: |
+                  APP_USE_CAS=NO
+                  APP_ADMIN_MAIL=test@asso-cocktail.com
+                  org.cocktail.gfc-compta.adminMail=test@asso-cocktail.com
+                  cocktail.feature.background.tasks=true
+                  oracle.jdbc.timezoneAsRegion=false
+                  DEFAULT_SESSION_TIME_OUT=10000
+                  # Identifiant SAUT de l'application
+                  # gfc-compta base de production
+                  APP_ID=gfc-compta
+                  # SAUT_ID_TRANSLATION=ULOGIN:GRHUM,GRHUM:GRHUM,gfc-compta:GRHUM
+                  # Libelle long de l'identifiant de l'application
+                  APP_ALIAS=gfc-compta dans gfc-compta / Contents / Resources / gfc-compta
+                  # Vous pouvez ne mettre dans ce repertoire que les éditions modifiees.
+                  hibernate.dialect=org.hibernate.dialect.Oracle12cDialect
+                  org.cocktail.fwkcktlwebapp.versiondatabase.enabled=false
+                  cocktail.feature.perimetre=false
+                  org.cocktail.securite.forceCryptedPass=false
+                  org.cocktail.gfc.services.base.url=http://gfc-services.ckaas.asso-cocktail.org
+                  org.cocktail.gfc-compta.nbresultats.demande-comptabilisations=200
+      - name: gfc-admin
+        type: caas-webobject
+        customValues: |
+          image:
+            repository: docker.depot.asso-cocktail.org/cocktail/application/gfc-admin
+            tag: "2022.1.latest"
+
+          appName: "gfc-Admin"
+          cgiAdaptorUrl: "https://gfc-admin.ckaas.asso-cocktail.org"
+
+          resources:
+            limits:
+              memory: "1Gi"
+            requests:
+              memory: 784Mi
+
+          service:
+            type: NodePort
+
+          ingress:
+            enabled: true
+            allowHttp: true
+            className: "nginx"
+            annotations:
+              cert-manager.io/cluster-issuer: letsencrypt-prod
+              kubernetes.io/tls-acme: "true"
+              nginx.ingress.kubernetes.io/enable-cors: "true"
+              nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+
+            hosts:
+              - paths:
+                  - path: /
+                    pathType: ImplementationSpecific
+            tls:
+              - secretName: adherent2-gfc-admin.tls
+
+          configFilesTree:
+            - directory: "/config"
+              configFiles:
+                application-k8s.properties: |
+                  APP_USE_CAS=NO
+                  APP_ADMIN_MAIL=test@asso-cocktail.com
+                  org.cocktail.gfc-admin.adminMail=test@asso-cocktail.com
+                  cocktail.feature.background.tasks=true
+                  oracle.jdbc.timezoneAsRegion=false
+                  DEFAULT_SESSION_TIME_OUT=10000
+                  # Identifiant SAUT de l'application
+                  # gfc-admin base de production
+                  APP_ID=gfc-admin
+                  # SAUT_ID_TRANSLATION=ULOGIN:GRHUM,GRHUM:GRHUM,gfc-admin:GRHUM
+                  # Libelle long de l'identifiant de l'application
+                  APP_ALIAS=gfc-admin dans gfc-admin / Contents / Resources / gfc-admin
+                  # Vous pouvez ne mettre dans ce repertoire que les éditions modifiees.
+                  hibernate.dialect=org.hibernate.dialect.Oracle12cDialect
+                  org.cocktail.fwkcktlwebapp.versiondatabase.enabled=false
+                  cocktail.feature.perimetre=false
+                  org.cocktail.securite.forceCryptedPass=false
+      - name: agrhum
+        type: caas-webobject
+        customValues: |
+          image:
+            repository: docker.depot.asso-cocktail.org/cocktail/application/agrhum
+            tag: 2022.3.13
+          appName: AGrhum
+          cgiAdaptorUrl: https://agrhum.ckaas.asso-cocktail.org
+          resources:
+            limits:
+              memory: 2Gi
+            requests:
+              memory: 2Gi
+          ingress:
+            enabled: true
+            allowHttp: true
+            className: nginx
+            annotations:
+              cert-manager.io/cluster-issuer: letsencrypt-prod
+              kubernetes.io/tls-acme: 'true'
+              nginx.ingress.kubernetes.io/enable-cors: 'true'
+              nginx.ingress.kubernetes.io/cors-allow-origin: '*'
+            hosts:
+            - paths:
+              - path: /
+                pathType: ImplementationSpecific
+            tls:
+            - secretName: adherent2-agrhum.tls
+          configFilesTree:
+          - directory: /config
+            configFiles:
+              application-k8s.properties: |
+                APP_USE_CAS=NO
+                cocktail.feature.background.tasks=true
+                oracle.jdbc.timezoneAsRegion=false
+                DEFAULT_SESSION_TIME_OUT=10000
+                # Identifiant SAUT de l'application
+                # AGRHUM base de production
+                APP_ID=AGRHUM
+                # SAUT_ID_TRANSLATION=ULOGIN:GRHUM,GRHUM:GRHUM,AGRHUM:GRHUM
+                # Libelle long de l'identifiant de l'application
+                APP_ALIAS=AGrhumdans AGRHUM / Contents / Resources / AGRHUM
+                # Vous pouvez ne mettre dans ce repertoire que les éditions modifiees.
+                hibernate.dialect=org.hibernate.dialect.Oracle12cDialect
+                org.cocktail.fwkcktlwebapp.versiondatabase.enabled=false
+                cocktail.feature.perimetre=false
+  template:
+    metadata:
+      name: caas-adherent2-{{"{{"}}name{{"}}"}}
+      labels:
+        caas.client.name: adherent2
+        caas.app.type: '{{"{{"}}type{{"}}"}}'
+        caas.app.name: '{{"{{"}}name{{"}}"}}'
+    spec:
+      project: caas-applications
+      source:
+        repoURL: git@forge.in.asso-cocktail.org:dsiadm/caas/caas-helm-charts.git
+        targetRevision: HEAD
+        path: charts/{{"{{"}}type{{"}}"}}
+        helm:
+          parameters:
+          - name: oracle.host
+            value: bdorsref1.sb.asso-cocktail.org
+          - name: oracle.port
+            value: '5221'
+          - name: oracle.user
+            value: grhum
+          - name: oracle.password
+            value: caasRHUM
+          - name: oracle.database
+            value: CAASUTF01
+          - name: ingress.hosts[0].host
+            value: '{{"{{"}}name{{"}}"}}.adherent2.ckaas.asso-cocktail.com'
+          - name: ingress.tls[0].hosts[0]
+            value: '{{"{{"}}name{{"}}"}}.adherent2.ckaas.asso-cocktail.com'
+          values: |
+            {{"{{"}}customValues{{"}}"}}
+      destination:
+        namespace: adherent2-proto
+        name: Dev
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true
+        - PruneLast=true

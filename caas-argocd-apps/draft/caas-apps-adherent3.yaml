@@ -1,0 +1,71 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: caas-apps-adherent3
+  namespace: argocd
+spec:
+  generators:
+    - merge:
+        mergeKeys:
+          - name
+        generators:
+          - git:
+              repoURL: 'git@forge.in.asso-cocktail.org:dsiadm/caas/caas-argocd-apps-cfg.git'
+              revision: HEAD
+              files:
+                - path: "common/config.yaml"
+          - git:
+              repoURL: 'git@forge.in.asso-cocktail.org:dsiadm/caas/caas-argocd-apps-cfg.git'
+              revision: HEAD
+              files:
+                - path: "common/gfc-services-config.yaml"
+                - path: "common/gfc-recettes-config.yaml"
+          - git:
+              repoURL: 'git@forge.in.asso-cocktail.org:dsiadm/caas/caas-argocd-apps-cfg.git'
+              revision: HEAD
+              files:
+                - path: "adherent3/versions.yaml"
+          - list:
+              elements:
+                - name: gfc-services
+                  type: caas-springboot
+                - name: gfc-recettes
+                  type: caas-webobject
+
+  template:
+    metadata:
+      name: 'caas-adherent3-{{"{{"}}name{{"}}"}}'
+      labels:
+        caas.client.name: adherent3
+        caas.app.type: '{{"{{"}}type{{"}}"}}'
+        caas.app.name: '{{"{{"}}name{{"}}"}}'
+        caas.app.version: '{{"{{"}}imageTag{{"}}"}}'
+    spec:
+      project: caas-applications
+      source:
+        repoURL: 'git@forge.in.asso-cocktail.org:dsiadm/caas/caas-helm-charts.git'
+        targetRevision: HEAD
+        path: charts/{{"{{"}}type{{"}}"}}
+        helm:
+          parameters:
+            - name: "image.repository"
+              value: 'docker.depot.asso-cocktail.org/cocktail/application/{{"{{"}}name{{"}}"}}'
+            - name: "image.tag"
+              value: '{{"{{"}}imageTag{{"}}"}}'
+            - name: "ingress.hosts[0].host"
+              value: '{{"{{"}}name{{"}}"}}.adherent3.ckaas.asso-cocktail.com'
+            - name: "ingress.tls[0].hosts[0]"
+              value: '{{"{{"}}name{{"}}"}}.adherent3.ckaas.asso-cocktail.com'
+          values: |
+            {{"{{"}}customCommonValues{{"}}"}}
+            {{"{{"}}customValues{{"}}"}}
+      destination:
+        namespace: adherent3
+        name: Dev
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - PruneLast=true

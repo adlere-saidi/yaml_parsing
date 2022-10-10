@@ -1,0 +1,85 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: caas-app-agrhum
+  namespace: argocd
+  labels:
+    caas.app.type: WebObject
+    caas.app.name: AGrhum
+spec:
+  project: caas-applications
+  source:
+    repoURL: 'git@forge.in.asso-cocktail.org:dsiadm/caas/caas-helm-charts.git'
+    path: charts/caas-webobject
+    targetRevision: HEAD
+    helm:
+      valueFiles:
+        - values.yaml
+      values: |
+        image:
+          repository: docker.depot.asso-cocktail.org/cocktail/application/agrhum
+          tag: "2022.1.13"
+        appName: "AGrhum"
+        cgiAdaptorUrl: "https://agrhum.ckaas.asso-cocktail.org"
+
+        resources:
+          limits:
+            memory: 2Gi
+          requests:
+            memory: 1Gi
+
+        oracle:
+          host: bdorsref1.sb.asso-cocktail.org
+          port: 5221
+          user: grhum
+          password: caasRHUM
+          database: CAASUTF01
+
+        ingress:
+          enabled: true
+          allowHttp: true
+          className: "nginx"
+          annotations:
+            cert-manager.io/cluster-issuer: letsencrypt-prod
+            kubernetes.io/tls-acme: "true"
+            nginx.ingress.kubernetes.io/enable-cors: "true"
+            nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+
+          hosts:
+            - host: agrhum.ckaas.asso-cocktail.com
+              paths:
+                - path: /
+                  pathType: ImplementationSpecific
+          tls:
+            - secretName: agrhum.ckaas.asso-cocktail.com-tls
+              hosts:
+                - agrhum.ckaas.asso-cocktail.com
+
+        configFilesTree:
+          - directory: "/config"
+            configFiles:
+              application-k8s.properties: |
+                APP_USE_CAS=NO
+                cocktail.feature.background.tasks=true
+                oracle.jdbc.timezoneAsRegion=false
+                DEFAULT_SESSION_TIME_OUT=10000
+                # Identifiant SAUT de l'application
+                # AGRHUM base de production
+                APP_ID=AGRHUM
+                # SAUT_ID_TRANSLATION=ULOGIN:GRHUM,GRHUM:GRHUM,AGRHUM:GRHUM
+                # Libelle long de l'identifiant de l'application
+                APP_ALIAS=AGrhumdans AGRHUM / Contents / Resources / AGRHUM
+                # Vous pouvez ne mettre dans ce repertoire que les éditions modifiees.
+                hibernate.dialect=org.hibernate.dialect.Oracle12cDialect
+                org.cocktail.fwkcktlwebapp.versiondatabase.enabled=false
+                cocktail.feature.perimetre=false
+  destination:
+    namespace: test-agrhum
+    name: Dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true

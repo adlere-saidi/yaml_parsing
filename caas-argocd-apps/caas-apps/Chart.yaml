@@ -1,0 +1,3 @@
+apiVersion: v2
+name: caas-applications
+version: 1.0.0

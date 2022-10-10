@@ -1,0 +1,102 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: caas-app-ref-gdr-front
+  namespace: argocd
+  labels:
+    caas.app.type: SpringBoot
+    caas.app.name: ref-gdr-front
+spec:
+  project: caas-applications
+  source:
+    repoURL: 'git@forge.in.asso-cocktail.org:dsiadm/caas/caas-helm-charts.git'
+    path: charts/caas-springboot
+    targetRevision: HEAD
+    helm:
+      valueFiles:
+        - values.yaml
+      values: |
+        image:
+          repository: docker.depot.asso-cocktail.org/cocktail/application/ref-gdr-front
+          tag: "2022.2.03"
+
+        appName: "ref-gdr-front"
+
+        extraEnv:
+          - name: "spring.profiles.active"
+            value: k8s
+          - name: "spring.config.additional-location"
+            value: "/config/"
+          - name: "spring.jmx.enabled"
+            value: "false"
+          - name: "logging.config"
+            value: "/config/logback-k8s.xml"
+
+        resources:
+          limits:
+            memory: 1Gi
+          requests:
+            memory: 256Mi
+
+        livenessProbeEnabled: false
+        readinessProbeEnabled: false
+
+        oracle:
+          host: bdorsref1.sb.asso-cocktail.org
+          port: 5221
+          user: grhum
+          password: caasRHUM
+          database: CAASUTF01
+
+        ingress:
+          enabled: true
+          allowHttp: true
+          className: "nginx"
+          annotations:
+            cert-manager.io/cluster-issuer: letsencrypt-prod
+            kubernetes.io/tls-acme: "true"
+          hosts:
+            - host: ref-gdr-front.ckaas.asso-cocktail.com
+              paths:
+                - path: /
+                  pathType: ImplementationSpecific
+          tls:
+            - secretName: ref-gdr-front.ckaas.asso-cocktail.com-tls
+              hosts:
+                - ref-gdr-front.ckaas.asso-cocktail.com
+
+        configFilesTree:
+          - directory: "/config"
+            configFiles:
+              application-k8s.yaml: |
+                spring.main.banner-mode: OFF
+                app.gui.referentielApiUrl: "http://localhost:9010"
+                logging:
+                  pattern:
+                    console: "%d{dd-MM-yyyy HH:mm:ss} %-5level [%-45.-45logger{45}] - %msg%n"
+                  level:
+                    org.hibernate.SQL: error
+                    org.cocktail: info
+
+              logback-k8s.xml: |
+                <configuration debug="true">
+                    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+                        <encoder>
+                            <pattern>%d{dd-MM-yyyy HH:mm:ss} %-5level [%-45.-45logger{45}] - %msg%n</pattern>
+                        </encoder>
+                    </appender>
+                    <!-- LOG everything at INFO level -->
+                    <root level="info">
+                            <appender-ref ref="STDOUT" />
+                    </root>
+                </configuration>
+  destination:
+    namespace: test-ref-gdr-front
+    name: Dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true

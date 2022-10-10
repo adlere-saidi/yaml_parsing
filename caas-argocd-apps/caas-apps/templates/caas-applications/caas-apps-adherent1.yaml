@@ -1,0 +1,142 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: caas-apps-adherent1
+  namespace: argocd
+spec:
+  generators:
+  - list:
+      elements:
+      - customValues: "image:\n  \n\n\nrepository: toto\n\n\n\nappName: \"Mangue\"\
+          \ncgiAdaptorUrl: \"https://mangue.ckaas.asso-cocktail.com\"\n\nresources:\n\
+          \  limits:\n    memory: \"1Gi\"\n  requests:\n    memory: 784Mi\n\nservice:\n\
+          \  type: ClusterIP\n\n\ningress:\n  enabled: true\n  allowHttp: true\n \
+          \ className: \"nginx\"\n  annotations:\n    cert-manager.io/cluster-issuer:\
+          \ letsencrypt-prod\n    kubernetes.io/tls-acme: \"true\"\n  hosts:\n   \
+          \ - host: adherent1-mangue.ckaas.asso-cocktail.com\n      paths:\n     \
+          \   - path: /\n          pathType: ImplementationSpecific\n  tls:\n    -\
+          \ secretName: adherent1-mangue.tls\n      hosts:\n        - adherent1-mangue.ckaas.asso-cocktail.com\n\
+          \nconfigFilesTree:\n  - directory: \"/config\"\n    configFiles:\n     \
+          \ application-k8s.properties: |\n        APP_USE_CAS=NO\n        cocktail.feature.background.tasks=true\n\
+          \        oracle.jdbc.timezoneAsRegion=false\n        DEFAULT_SESSION_TIME_OUT=10000\n\
+          \        # Identifiant SAUT de l'application\n        # ManGUE base de production\n\
+          \        APP_ID=MANGUE\n        # Connexion \xE0 SAUT =prioritaire sur GRHUM_PARAMETRES\n\
+          \        SAUT_USER=YES\n        # URL de connexion a SAUT\n        SAUT_URL=https://apps.univ-lr.fr/cgi-bin/WebObjects/ServAut.woa/wa/\n\
+          \        # SAUT_ID_TRANSLATION=ULOGIN:GRHUM,GRHUM:GRHUM,MANGUE:GRHUM\n \
+          \       # Libelle long de l'identifiant de l'application\n        APP_ALIAS=ManGUE\n\
+          \        # Libelle du Service utilise pour les impressions\n        SERVICE=Direction\
+          \ des Ressources Humaines\n        # Logs (cote Serveur)  detailles =O =\
+          \ oui, N = non\n        MODE_DEBUG=N\n        # Affichage (cote Serveur)\
+          \ des erreurs dans la console (O) ou dans un fichier (N)\n        MODE_CONSOLE=O\n\
+          \        # Prise en compte d'un time zone par defaut\n        DEFAULT_TIME_ZONE=Europe/Paris\n\
+          \        # Adresse mail de reception des messages (NE PAS MODIFIER)\n  \
+          \      APP_ADMIN_MAIL=mangue@cocktail.org\n        # Destinataires des logs\
+          \ d'erreur de l'application s\xE9par\xE9s par des virgules\n        MAIL_LOGS_ERREURS:\n\
+          \        # Repertoire par defaut du directory d'impression sur le client\n\
+          \        DIRECTORY_IMPRESSION_CLIENT=/tmp\n        # Path local - Chemin\
+          \ de generation des \xE9ditions\n        DIRECTORY_IMPRESSION=/cephfs/tmp\n\
+          \        # Chemin des maquettes locales des editions contenues dans Mangue\
+          \ / Contents / Resources / Impressions\n        # Vous pouvez ne mettre\
+          \ dans ce repertoire que les \xE9ditions modifiees.\n        DIRECTORY_JASPER=/cephfs/reports/jasper/\n\
+          \        # Chemin des maquettes locales des editions contenues dans Mangue\
+          \ / Contents / Resources / Mangue_Impressions\n        # Vous pouvez ne\
+          \ mettre dans ce repertoire que les \xE9ditions modifiees.\n        DIRECTORY_MODULE_IMPRESSION=/cephfs/reports/jasper/\n\
+          \        # Mot de passe Administrateur\n        APP_ADMIN_PASSWORD=\n  \
+          \      #Cl\xE9 donnant le chemin vers le fichier properties de configuration\
+          \ des logs\n        # Par defaut, les fichiers pris en compte sont ceux\
+          \ de Contents/Resources\n        #org.cocktail.application.client.log=/directory_to_change/log4jClient.properties\n\
+          \        #org.cocktail.application.server.log=/directory_to_change/log4jServer.properties\n\
+          \        spring.kafka.bootstrap-servers=gesprod-grh-kafka-cluster-kafka-bootstrap.gesprod.svc.cluster.local:9092\n\
+          \        spring.kafka.reconnect.backoff.ms=20000\n        spring.kafka.max.block.ms=10000\n\
+          \        # Activation/d\xE9sactivation de la tache de traitement des \xE9\
+          v\xE8nements \xE0 envoyer \xE0 kafka\n        # A ne mettre en place que\
+          \ sur une seule instance si Mangue est sur du multi-instances\n        #\
+          \ pour cela, ajouter dans le WOMonitor au d\xE9marrage de l'instance -Dcocktail.feature.kafka.tasks=true\n\
+          \        cocktail.feature.kafka.tasks=false\n        # Delai entre deux\
+          \ ex\xE9cutions de la tache de traitement des \xE9v\xE8nements \xE0 envoyer\
+          \ \xE0 kafka\n        cocktail.mangue.kafka.delay.s=30\n        cocktail.mangue.kafka.schema-registry.url=http://gesprod-grh-kafka-stack-cp-schema-registry.gesprod.svc.cluster.local:8081\n\
+          \        # Activation de la synchronisation de tous les dossiers de paye\n\
+          \        # Si ce param\xE8tre est \xE0 true, la gestion de la synchronisation\
+          \ g\xE9n\xE9rale se fera dans le menu \"App / Param\xE8tres\"\n        cocktail.feature.synchroniserDossiersPayes=false\n\
+          \        # url.grh-envoi-paye=http://grh-envoi-paye.etablissement.fr\n \
+          \       # url.grh-envoi-paye=https://grh-envoi-paye-gesprod.calypso.univ-lr.fr\n\
+          \        # QUESTION : comment est utilis\xE9e cette url (mangue.serveur\
+          \ --> evp.serveur ou mangue.client --> evp.serveur )\n        # k8s: <service-name>.<namespace>.svc.cluster.local:<service-port>\n\
+          \        url.grh-envoi-paye=http://gesprod-grh-envoi-paye.gesprod.svc.cluster.local\n\
+          \        # logs sql (DEBUG pour les avoirs)\n        log4j.logger.er.transaction.adaptor.EOAdaptorDebugEnabled=INFO\n\
+          \        # # Nom du topic kafka agent\n        kafka.topic.boot-agent=GRH_AGENT\n\
+          \        hibernate.dialect=org.hibernate.dialect.Oracle12cDialect\n"
+        name: mangue
+        type: caas-webobject
+      - customValues: "image:\n  \n\n\nrepository: tutu\n\n\n\nappName: \"grh-envoi-paye\"\
+          \n\nextraEnv:\n  - name: \"spring.profiles.active\"\n    value: k8s\n  -\
+          \ name: \"spring.config.additional-location\"\n    value: \"/config/\"\n\
+          \  - name: \"spring.jmx.enabled\"\n    value: \"false\"\n  - name: \"logging.config\"\
+          \n    value: \"/config/logback-k8s.xml\"\n\nresources:\n  limits:\n    memory:\
+          \ 1Gi\n  requests:\n    memory: 256Mi\n\noracle:\n  host: bdorsref1.sb.asso-cocktail.org\n\
+          \  port: 5221\n  user: grhum\n  password: caasRHUM\n  database: CAASUTF01\n\
+          \ningress:\n  enabled: true\n  allowHttp: true\n  className: \"nginx\"\n\
+          \  annotations:\n    cert-manager.io/cluster-issuer: letsencrypt-prod\n\
+          \    kubernetes.io/tls-acme: \"true\"\n  hosts:\n    - host: adherent1-grh-envoi-paye.ckaas.asso-cocktail.com\n\
+          \      paths:\n        - path: /\n          pathType: ImplementationSpecific\n\
+          \  tls:\n    - secretName: adherent1-grh-envoi-paye.tls\n      hosts:\n\
+          \        - adherent1-grh-envoi-paye.ckaas.asso-cocktail.com\n\nconfigFilesTree:\n\
+          \  - directory: \"/config\"\n    configFiles:\n      application-k8s.yaml:\
+          \ |\n        spring.main.banner-mode: OFF\n        management.endpoints.web.exposure.include:\
+          \ \"*\"\n        cas.server-login-url: \"https://auth.asso-cocktail.fr/cas6/login\"\
+          \n        cas.server-logout-url:  \"https://auth.asso-cocktail.fr/cas6/logout\"\
+          \n        cas.server: \"https://auth.asso-cocktail.fr/cas6\"\n        edition.actes-administratifs-templates.local-\n\
+          \n\nrepository: tutu\n\n\n\n        edition.nom-etablissement: Cocktail\n\
+          \        edition.nom-service: \"service:Marseille\"\n        kafka:\n  \
+          \        enabled: false\n        logging:\n          pattern:\n        \
+          \    console: \"%d{dd-MM-yyyy HH:mm:ss} %-5level [%-45.-45logger{45}] -\
+          \ %msg%n\"\n          level:\n            org.hibernate.SQL: error\n   \
+          \         org.cocktail: info\n\n      logback-k8s.xml: |\n        <configuration\
+          \ debug=\"true\">\n            <appender name=\"STDOUT\" class=\"ch.qos.logback.core.ConsoleAppender\"\
+          >\n                <encoder>\n                    <pattern>%d{dd-MM-yyyy\
+          \ HH:mm:ss} %-5level [%-45.-45logger{45}] - %msg%n</pattern>\n         \
+          \       </encoder>\n            </appender>\n            <!-- LOG everything\
+          \ at INFO level -->\n            <root level=\"info\">\n               \
+          \     <appender-ref ref=\"STDOUT\" />\n            </root>\n        </configuration>\n"
+        name: grh-envoi-paye
+        type: caas-springboot
+  template:
+    metadata:
+      labels:
+        caas.app.name: '{{"{{"}}name{{"}}"}}'
+        caas.app.type: '{{"{{"}}type{{"}}"}}'
+        caas.client.name: adherent1
+      name: caas-adherent1-{{"{{"}}name{{"}}"}}
+    spec:
+      destination:
+        name: Dev
+        namespace: adherent1-proto
+      project: caas-applications
+      source:
+        helm:
+          parameters:
+          - name: oracle.host
+            value: bdorsref1.sb.asso-cocktail.org
+          - name: oracle.port
+            value: '5221'
+          - name: oracle.user
+            value: grhum
+          - name: oracle.password
+            value: caasRHUM
+          - name: oracle.database
+            value: CAASUTF01
+          - name: image.tag
+            value: 2022.1.13
+          values: '{{"{{"}}customValues{{"}}"}}
+
+            '
+        path: charts/{{"{{"}}type{{"}}"}}
+        repoURL: git@forge.in.asso-cocktail.org:dsiadm/caas/caas-helm-charts.git
+        targetRevision: HEAD
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true
+        - PruneLast=true

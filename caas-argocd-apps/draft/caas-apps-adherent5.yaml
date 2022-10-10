@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: caas-apps-adherent5
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - name: gfc-services
+            type: caas-springboot
+
+          - name: gfc-recettes
+            type: caas-webobject
+
+          - name: gfc-admin
+            type: caas-webobject
+
+          - name: agrhum
+            type: caas-webobject
+
+  template:
+    metadata:
+      name: 'caas-adherent5-{{"{{"}}name{{"}}"}}'
+      labels:
+        caas.client.name: adherent5
+        caas.app.type: '{{"{{"}}type{{"}}"}}'
+        caas.app.name: '{{"{{"}}name{{"}}"}}'
+    spec:
+      project: caas-applications
+      source:
+        repoURL: 'git@forge.in.asso-cocktail.org:dsiadm/caas/caas-helm-charts.git'
+        targetRevision: HEAD
+        path: charts/{{"{{"}}type{{"}}"}}
+        helm:
+          parameters:
+            - { name: image.repository, value: 'docker.depot.asso-cocktail.org/cocktail/application/{{"{{"}}name{{"}}"}}' }
+            - name: "ingress.hosts[0].host"
+              value: '{{"{{"}}name{{"}}"}}.adherent5.ckaas.asso-cocktail.com'
+            - name: "ingress.tls[0].hosts[0]"
+              value: '{{"{{"}}name{{"}}"}}.adherent5.ckaas.asso-cocktail.com'
+          valueFiles:
+            - values.yaml
+            - 'adherent5/common-values.yaml'
+            - 'adherent5/{{"{{"}}name{{"}}"}}-values.yaml'
+      destination:
+        namespace: adherent5-proto
+        name: Dev
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - PruneLast=true

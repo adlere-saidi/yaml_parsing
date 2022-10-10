@@ -1,0 +1,136 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: caas-app-mangue
+  namespace: argocd
+  labels:
+    caas.app.type: WebObject
+    caas.app.name: Mangue
+spec:
+  project: caas-applications
+  source:
+    repoURL: 'git@forge.in.asso-cocktail.org:dsiadm/caas/caas-helm-charts.git'
+    path: charts/caas-webobject
+    targetRevision: HEAD
+    helm:
+      valueFiles:
+        - values.yaml
+      values: |
+        image:
+          repository: docker.depot.asso-cocktail.org/cocktail/application/mangue
+          tag: "2022.1.13"
+        appName: "Mangue"
+        cgiAdaptorUrl: "https://mangue.ckaas.asso-cocktail.com"
+
+        resources:
+          limits:
+            memory: "1Gi"
+          requests:
+            memory: 784Mi
+
+        service:
+          type: NodePort
+
+        oracle:
+          host: bdorsref1.sb.asso-cocktail.org
+          port: 5221
+          user: grhum
+          password: caasRHUM
+          database: CAASUTF01
+
+        ingress:
+          enabled: true
+          allowHttp: true
+          className: "nginx"
+          annotations:
+            cert-manager.io/cluster-issuer: letsencrypt-prod
+            kubernetes.io/tls-acme: "true"
+          hosts:
+            - host: mangue.ckaas.asso-cocktail.com
+              paths:
+                - path: /
+                  pathType: ImplementationSpecific
+          tls:
+            - secretName: mangue.ckaas.asso-cocktail.com-tls
+              hosts:
+                - mangue.ckaas.asso-cocktail.com
+
+        configFilesTree:
+          - directory: "/config"
+            configFiles:
+              application-k8s.properties: |
+                APP_USE_CAS=NO
+                cocktail.feature.background.tasks=true
+                oracle.jdbc.timezoneAsRegion=false
+                DEFAULT_SESSION_TIME_OUT=10000
+                # Identifiant SAUT de l'application
+                # ManGUE base de production
+                APP_ID=MANGUE
+                # Connexion à SAUT =prioritaire sur GRHUM_PARAMETRES
+                SAUT_USER=YES
+                # URL de connexion a SAUT
+                SAUT_URL=https://apps.univ-lr.fr/cgi-bin/WebObjects/ServAut.woa/wa/
+                # SAUT_ID_TRANSLATION=ULOGIN:GRHUM,GRHUM:GRHUM,MANGUE:GRHUM
+                # Libelle long de l'identifiant de l'application
+                APP_ALIAS=ManGUE
+                # Libelle du Service utilise pour les impressions
+                SERVICE=Direction des Ressources Humaines
+                # Logs (cote Serveur)  detailles =O = oui, N = non
+                MODE_DEBUG=N
+                # Affichage (cote Serveur) des erreurs dans la console (O) ou dans un fichier (N)
+                MODE_CONSOLE=O
+                # Prise en compte d'un time zone par defaut
+                DEFAULT_TIME_ZONE=Europe/Paris
+                # Adresse mail de reception des messages (NE PAS MODIFIER)
+                APP_ADMIN_MAIL=mangue@cocktail.org
+                # Destinataires des logs d'erreur de l'application séparés par des virgules
+                MAIL_LOGS_ERREURS:
+                # Repertoire par defaut du directory d'impression sur le client
+                DIRECTORY_IMPRESSION_CLIENT=/tmp
+                # Path local - Chemin de generation des éditions
+                DIRECTORY_IMPRESSION=/cephfs/tmp
+                # Chemin des maquettes locales des editions contenues dans Mangue / Contents / Resources / Impressions
+                # Vous pouvez ne mettre dans ce repertoire que les éditions modifiees.
+                DIRECTORY_JASPER=/cephfs/reports/jasper/
+                # Chemin des maquettes locales des editions contenues dans Mangue / Contents / Resources / Mangue_Impressions
+                # Vous pouvez ne mettre dans ce repertoire que les éditions modifiees.
+                DIRECTORY_MODULE_IMPRESSION=/cephfs/reports/jasper/
+                # Mot de passe Administrateur
+                APP_ADMIN_PASSWORD=
+                #Clé donnant le chemin vers le fichier properties de configuration des logs
+                # Par defaut, les fichiers pris en compte sont ceux de Contents/Resources
+                #org.cocktail.application.client.log=/directory_to_change/log4jClient.properties
+                #org.cocktail.application.server.log=/directory_to_change/log4jServer.properties
+                spring.kafka.bootstrap-servers=gesprod-grh-kafka-cluster-kafka-bootstrap.gesprod.svc.cluster.local:9092
+                spring.kafka.reconnect.backoff.ms=20000
+                spring.kafka.max.block.ms=10000
+                # Activation/désactivation de la tache de traitement des évènements à envoyer à kafka
+                # A ne mettre en place que sur une seule instance si Mangue est sur du multi-instances
+                # pour cela, ajouter dans le WOMonitor au démarrage de l'instance -Dcocktail.feature.kafka.tasks=true
+                cocktail.feature.kafka.tasks=false
+                # Delai entre deux exécutions de la tache de traitement des évènements à envoyer à kafka
+                cocktail.mangue.kafka.delay.s=30
+                cocktail.mangue.kafka.schema-registry.url=http://gesprod-grh-kafka-stack-cp-schema-registry.gesprod.svc.cluster.local:8081
+                # Activation de la synchronisation de tous les dossiers de paye
+                # Si ce paramètre est à true, la gestion de la synchronisation générale se fera dans le menu "App / Paramètres"
+                cocktail.feature.synchroniserDossiersPayes=false
+                # url.grh-envoi-paye=http://grh-envoi-paye.etablissement.fr
+                # url.grh-envoi-paye=https://grh-envoi-paye-gesprod.calypso.univ-lr.fr
+                # QUESTION : comment est utilisée cette url (mangue.serveur --> evp.serveur ou mangue.client --> evp.serveur )
+                # k8s: <service-name>.<namespace>.svc.cluster.local:<service-port>
+                url.grh-envoi-paye=http://gesprod-grh-envoi-paye.gesprod.svc.cluster.local
+                # logs sql (DEBUG pour les avoirs)
+                log4j.logger.er.transaction.adaptor.EOAdaptorDebugEnabled=INFO
+                # # Nom du topic kafka agent
+                kafka.topic.boot-agent=GRH_AGENT
+                hibernate.dialect=org.hibernate.dialect.Oracle12cDialect
+  destination:
+    namespace: test-mangue
+    name: Dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true

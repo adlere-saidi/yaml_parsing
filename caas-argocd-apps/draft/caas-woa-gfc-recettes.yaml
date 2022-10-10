@@ -1,0 +1,90 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: caas-app-gfc-recettes
+  namespace: argocd
+  labels:
+    caas.app.type: WebObject
+    caas.app.name: gfc-recettes
+spec:
+  project: caas-applications
+  source:
+    repoURL: 'git@forge.in.asso-cocktail.org:dsiadm/caas/caas-helm-charts.git'
+    path: charts/caas-webobject
+    targetRevision: HEAD
+    helm:
+      valueFiles:
+        - values.yaml
+      values: |
+        image:
+          repository: docker.depot.asso-cocktail.org/cocktail/application/gfc-recettes
+          tag: "2022.1.latest"
+        appName: "gfc-Recettes"
+        cgiAdaptorUrl: "https://gfc-recettes.ckaas.asso-cocktail.org"
+
+        resources:
+          limits:
+            memory: "1Gi"
+          requests:
+            memory: 784Mi
+
+        service:
+          type: NodePort
+
+        oracle:
+          host: bdorsref1.sb.asso-cocktail.org
+          port: 5221
+          user: grhum
+          password: caasRHUM
+          database: CAASUTF01
+
+        ingress:
+          enabled: true
+          allowHttp: true
+          className: "nginx"
+          annotations:
+            cert-manager.io/cluster-issuer: letsencrypt-prod
+            kubernetes.io/tls-acme: "true"
+            nginx.ingress.kubernetes.io/enable-cors: "true"
+            nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+
+          hosts:
+            - host: gfc-recettes.ckaas.asso-cocktail.com
+              paths:
+                - path: /
+                  pathType: ImplementationSpecific
+          tls:
+            - secretName: gfc-recettes.ckaas.asso-cocktail.com-tls
+              hosts:
+                - gfc-recettes.ckaas.asso-cocktail.com
+
+        configFilesTree:
+          - directory: "/config"
+            configFiles:
+              application-k8s.properties: |
+                APP_USE_CAS=NO
+                APP_ADMIN_MAIL=test@asso-cocktail.com
+                org.cocktail.gfc-recettes.adminMail=test@asso-cocktail.com
+                cocktail.feature.background.tasks=true
+                oracle.jdbc.timezoneAsRegion=false
+                DEFAULT_SESSION_TIME_OUT=10000
+                # Identifiant SAUT de l'application
+                # gfc-recettes base de production
+                APP_ID=gfc-recettes
+                # SAUT_ID_TRANSLATION=ULOGIN:GRHUM,GRHUM:GRHUM,gfc-recettes:GRHUM
+                # Libelle long de l'identifiant de l'application
+                APP_ALIAS=gfc-recettesdans gfc-recettes / Contents / Resources / gfc-recettes
+                # Vous pouvez ne mettre dans ce repertoire que les éditions modifiees.
+                hibernate.dialect=org.hibernate.dialect.Oracle12cDialect
+                org.cocktail.fwkcktlwebapp.versiondatabase.enabled=false
+                cocktail.feature.perimetre=false
+  destination:
+    namespace: test-gfc-recettes
+    name: Dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true
