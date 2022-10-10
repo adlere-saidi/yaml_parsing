@@ -224,8 +224,8 @@ spec:
           values: |
             {{"{{"}}customValues{{"}}"}}
 destination:
-        namespace: adherent1-proto
-        name: Dev
+      namespace: adherent1-proto
+      name: Dev
       syncPolicy:
         automated:
           prune: true
