@@ -31,7 +31,8 @@ with open('template_image.yaml', "r") as t:
 
     except yaml.YAMLError as exc:
         print ("not ok")
-
+        
+os.system("pwd")
 # Replace image récupération 1 par récupération 2 
 with open ('caas-apps-adherent1.yaml', "r") as f:
     try:
@@ -47,7 +48,7 @@ with open ('caas-apps-adherent1.yaml', "r") as f:
                         break
                     
     except yaml.YAMLError as exc:
-        print ("not ok")
+        print (exc)
 
 # Write
 with open ('caas-apps-adherent1.yaml', "w") as f:
